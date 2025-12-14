@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>El Impostor + IA</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #111827;
+            color: #f3f4f6;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 1.5rem;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .player-card {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .player-card:active {
+            transform: scale(0.95);
+        }
+
+        .timer-bar {
+            transition: width 1s linear;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            box-shadow: 0 4px 15px -1px rgba(139, 92, 246, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        /* Animación de carga para IA */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #ec4899;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== PANTALLAS ==================== -->
+
+    <!-- 1. HOME -->
+    <section id="screen-home" class="screen active text-center">
+        <div class="mb-8 relative">
+            <span class="text-6xl z-10 relative">🥸</span>
+            <div class="absolute inset-0 bg-purple-500 blur-2xl opacity-20"></div>
+        </div>
+        <h1 class="text-5xl font-black mb-2 uppercase tracking-tighter gradient-text">El Impostor</h1>
+        <p class="text-gray-400 mb-12 text-lg">Descubre quién miente entre nosotros.</p>
+        
+        <button onclick="App.goToConfig()" class="btn-primary w-full max-w-xs py-4 rounded-2xl text-xl font-bold text-white mb-4">
+            Comenzar Partida
+        </button>
+        <p class="text-xs text-gray-600 mt-8">Powered by Gemini AI ✨</p>
+    </section>
+
+    <!-- 2. CONFIGURACIÓN -->
+    <section id="screen-config" class="screen">
+        <h2 class="text-3xl font-bold mb-6 text-center">Configuración</h2>
+        
+        <!-- Paso 1: Selección de Modo -->
+        <div id="config-step-1" class="w-full max-w-md space-y-4">
+            <p class="text-center text-gray-400 mb-4">¿De dónde sacamos las palabras?</p>
+            
+            <button onclick="App.selectMode('house')" class="w-full bg-gray-800 hover:bg-gray-700 p-4 rounded-xl border border-gray-700 text-left flex items-center transition-colors">
+                <span class="text-2xl mr-4">🏠</span>
+                <div>
+                    <div class="font-bold">Lista de la Casa</div>
+                    <div class="text-xs text-gray-400">Categorías divertidas predefinidas</div>
+                </div>
+            </button>
+            
+            <!-- OPCIÓN IA NUEVA -->
+            <button onclick="App.selectMode('ai')" class="w-full bg-gradient-to-r from-gray-900 to-indigo-950 hover:from-gray-800 hover:to-indigo-900 ai-glow p-4 rounded-xl text-left flex items-center transition-all group">
+                <span class="text-2xl mr-4 group-hover:scale-110 transition-transform">✨</span>
+                <div>
+                    <div class="font-bold text-indigo-300">Creador IA</div>
+                    <div class="text-xs text-indigo-400">Gemini inventa la lista por ti</div>
+                </div>
+            </button>
+
+            <button onclick="App.selectMode('custom')" class="w-full bg-gray-800 hover:bg-gray-700 p-4 rounded-xl border border-gray-700 text-left flex items-center transition-colors">
+                <span class="text-2xl mr-4">✍️</span>
+                <div>
+                    <div class="font-bold">Personalizada</div>
+                    <div class="text-xs text-gray-400">Escribe tus propias palabras</div>
+                </div>
+            </button>
+
+            <button onclick="App.selectMode('mixed')" class="w-full bg-gray-800 hover:bg-gray-700 p-4 rounded-xl border border-gray-700 text-left flex items-center transition-colors">
+                <span class="text-2xl mr-4">🔀</span>
+                <div>
+                    <div class="font-bold">Mezcla</div>
+                    <div class="text-xs text-gray-400">Tus palabras + Las nuestras</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Paso 2: Input de palabras (Solo visible en Custom/Mixed) -->
+        <div id="config-step-custom" class="w-full max-w-md hidden space-y-4">
+            <label class="block text-sm font-medium text-gray-300">Ingresa palabras (separadas por coma)</label>
+            <textarea id="custom-words-input" rows="4" class="w-full bg-gray-900 border border-gray-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Ej: Pizza, Elon Musk, La Biblia..."></textarea>
+            
+            <!-- Slider solo visible si es Mixed -->
+            <div id="mixed-slider-container" class="hidden pt-2">
+                <label class="flex justify-between text-sm text-gray-400 mb-2">
+                    <span>Prioridad Palabras:</span>
+                    <span id="mix-percent-display" class="text-purple-400 font-bold">50% Mías</span>
+                </label>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span>Casa</span>
+                    <input type="range" id="mix-slider" min="0" max="100" value="50" class="flex-1 accent-purple-500" oninput="App.updateMixDisplay(this.value)">
+                    <span>Mías</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between mt-4">
+                <button onclick="App.backToModeSelect()" class="text-gray-400 underline text-sm">Atrás</button>
+                <button onclick="App.confirmCustomWords()" class="bg-purple-600 px-4 py-2 rounded-lg font-bold">Continuar</button>
+            </div>
+        </div>
+
+        <!-- Paso 2.5: Input IA (Nuevo) -->
+        <div id="config-step-ai" class="w-full max-w-md hidden space-y-4">
+            <div class="text-center mb-4">
+                <span class="text-4xl">🤖</span>
+                <h3 class="text-xl font-bold text-indigo-300 mt-2">Gemini al mando</h3>
+                <p class="text-xs text-gray-400">Escribe cualquier tema y la IA creará el juego.</p>
+            </div>
+            
+            <label class="block text-sm font-medium text-gray-300">¿De qué quieres jugar hoy?</label>
+            <input type="text" id="ai-topic-input" class="w-full bg-gray-900 border border-indigo-500 rounded-xl p-4 text-white focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="Ej: Villanos de Disney, Marcas de autos, Comida picante...">
+            
+            <div id="ai-error-msg" class="text-red-400 text-xs hidden text-center"></div>
+
+            <button id="btn-generate-ai" onclick="App.generateAIWords()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold shadow-lg shadow-indigo-900/50 transition-all flex justify-center items-center">
+                <span>✨ Generar Palabras</span>
+            </button>
+            
+            <button onclick="App.backToModeSelect()" class="w-full text-gray-500 text-sm py-2">Cancelar</button>
+        </div>
+
+        <!-- Paso 3: Categorías de la Casa (Solo visible en House) -->
+        <div id="config-step-categories" class="w-full max-w-md hidden space-y-4">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Elige una categoría:</label>
+            <div id="categories-list" class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto no-scrollbar">
+                <!-- Se llena con JS -->
+            </div>
+             <button onclick="App.backToModeSelect()" class="text-gray-400 underline text-sm mt-4">Atrás</button>
+        </div>
+
+        <!-- Paso 4: Jugadores -->
+        <div id="config-step-players" class="w-full max-w-md hidden flex-col h-full">
+            <div class="flex-1 overflow-y-auto no-scrollbar pb-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold">Jugadores</h3>
+                    <div class="flex items-center bg-gray-800 rounded-lg p-1">
+                        <button onclick="App.adjustPlayerCount(-1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-400 hover:text-white">-</button>
+                        <span id="player-count-display" class="mx-2 font-mono font-bold text-purple-400">3</span>
+                        <button onclick="App.adjustPlayerCount(1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-400 hover:text-white">+</button>
+                    </div>
+                </div>
+                
+                <div id="players-inputs" class="space-y-3">
+                    <!-- Inputs generados por JS -->
+                </div>
+
+                <!-- Configuración Avanzada de Roles -->
+                <div class="mt-8 p-4 bg-gray-800 rounded-xl border border-gray-700">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Roles Especiales</h4>
+                    
+                    <!-- Slider Impostores -->
+                    <div class="mb-4">
+                        <label class="flex items-center justify-between text-sm text-gray-300 mb-2">
+                            <span>Impostores</span>
+                            <span id="impostor-count-display" class="font-bold text-white bg-gray-700 px-2 rounded">1</span>
+                        </label>
+                        <input type="range" id="impostor-slider" min="1" max="3" value="1" class="w-full accent-purple-500" oninput="App.updateImpostorCount(this.value)">
+                    </div>
+
+                    <!-- Toggle Personaje Perdido -->
+                    <div class="flex items-center justify-between mt-4">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-white">Personaje Perdido 😵‍💫</span>
+                            <span class="text-xs text-gray-400">No es impostor, pero no sabe la palabra.</span>
+                        </div>
+                        <div class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="lost-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-600 left-0 transition-all duration-300"/>
+                            <label for="lost-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-700 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 mt-auto w-full">
+                <button onclick="App.startGame()" class="btn-primary w-full py-4 rounded-2xl text-xl font-bold text-white">
+                    ¡Iniciar Juego!
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. DISTRIBUCIÓN DE ROLES -->
+    <section id="screen-roles" class="screen">
+        <h2 class="text-2xl font-bold mb-2 text-purple-400">Tu Identidad</h2>
+        <p class="text-gray-400 mb-8 text-center text-sm">Pasa el dispositivo al jugador indicado.</p>
+        
+        <div id="cards-container" class="grid grid-cols-2 gap-4 w-full max-w-md">
+            <!-- Las cartas de jugadores se renderizan aquí -->
+        </div>
+    </section>
+
+    <!-- 3.1 MODAL DE VISUALIZACIÓN DE ROL (Overlay) -->
+    <div id="role-reveal-overlay" class="fixed inset-0 z-50 bg-black hidden flex-col items-center justify-center p-6">
+        <!-- Estado 1: Confirmación -->
+        <div id="reveal-step-confirm" class="text-center w-full max-w-sm animate-bounce-small">
+            <div class="text-6xl mb-6">🛑</div>
+            <h3 class="text-3xl font-bold mb-4">¿Eres <span id="reveal-player-name" class="text-purple-400">Nombre</span>?</h3>
+            <p class="text-gray-500 mb-8">Asegúrate de que nadie más esté mirando la pantalla.</p>
+            <button onclick="App.showSecretRole()" class="bg-white text-gray-900 w-full py-4 rounded-xl font-bold text-xl hover:bg-gray-200 transition-colors">
+                Sí, ver mi rol
+            </button>
+            <button onclick="App.closeRevealOverlay()" class="mt-4 text-gray-500 text-sm">Cancelar</button>
+        </div>
+
+        <!-- Estado 2: El Rol (Se muestra por 5s) -->
+        <div id="reveal-step-content" class="hidden text-center w-full h-full flex flex-col justify-center items-center">
+            <div id="role-icon" class="text-8xl mb-6 animate-pulse">🤫</div>
+            <h2 id="role-title" class="text-4xl font-black mb-4 uppercase text-white">ROL</h2>
+            
+            <div id="role-word-container" class="bg-gray-800 p-6 rounded-2xl w-full max-w-xs border border-gray-700 mb-8">
+                <p id="role-subtitle" class="text-gray-400 text-sm uppercase tracking-widest mb-2">Tu palabra secreta</p>
+                <p id="role-word" class="text-3xl font-bold text-purple-300">PALABRA</p>
+            </div>
+
+            <!-- Timer visual -->
+            <div class="w-full max-w-xs bg-gray-800 h-2 rounded-full overflow-hidden mb-8">
+                <div id="role-timer-bar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-full"></div>
+            </div>
+
+            <button onclick="App.hideSecretRole()" class="bg-gray-700 text-white w-full max-w-xs py-3 rounded-xl font-bold">
+                Ocultar ahora
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. INICIO DE RONDA -->
+    <section id="screen-round-start" class="screen text-center">
+        <div class="text-7xl mb-6">🗣️</div>
+        <h2 class="text-4xl font-bold mb-4">¡Todos listos!</h2>
+        
+        <!-- Regla de inicio divertida -->
+        <div class="bg-gradient-to-r from-purple-900 to-indigo-900 p-6 rounded-2xl border border-purple-500/50 mb-8 max-w-xs mx-auto shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 text-6xl opacity-10">🚀</div>
+            <p class="text-xs text-purple-300 uppercase tracking-widest font-bold mb-2">Quién comienza:</p>
+            <p id="start-rule-text" class="text-xl font-bold text-white leading-tight">
+                El jugador más joven empieza.
+            </p>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded-xl mb-8 text-left max-w-xs mx-auto text-sm text-gray-400 border border-gray-700">
+            <p><strong>Reglas:</strong></p>
+            <ul class="list-disc ml-5 mt-2 space-y-1">
+                <li>No digas la palabra exacta.</li>
+                <li>Si eres el impostor, finge o miente.</li>
+                <li>Hagan preguntas para atrapar al mentiroso.</li>
+            </ul>
+        </div>
+        <button onclick="App.goToGame()" class="btn-primary px-8 py-4 rounded-full text-xl font-bold animate-pulse">
+            ⏱️ Comenzar Ronda
+        </button>
+    </section>
+
+    <!-- 5. JUEGO (Pistas Offline) -->
+    <section id="screen-game" class="screen text-center">
+        <!-- AI Helper Modal -->
+        <div id="ai-hint-modal" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-gray-800 p-6 rounded-2xl max-w-sm w-full border border-indigo-500 relative">
+                <button onclick="document.getElementById('ai-hint-modal').classList.add('hidden'); document.getElementById('ai-hint-modal').classList.remove('flex')" class="absolute top-2 right-4 text-gray-400 text-xl">x</button>
+                <div class="text-center">
+                    <span class="text-4xl">🤖</span>
+                    <h3 class="text-lg font-bold text-indigo-300 mt-2 mb-4">Sugerencia Táctica</h3>
+                    <div id="ai-hint-content" class="text-white italic text-lg mb-4 min-h-[60px] flex items-center justify-center">
+                        <!-- Hint goes here -->
+                    </div>
+                    <button onclick="document.getElementById('ai-hint-modal').classList.add('hidden'); document.getElementById('ai-hint-modal').classList.remove('flex')" class="bg-gray-700 w-full py-2 rounded-lg">Entendido</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute top-6 right-6 opacity-20 text-6xl rotate-12">🎭</div>
+        
+        <h2 class="text-2xl font-bold mb-4 text-gray-300">Ronda en curso...</h2>
+        
+        <div class="bg-gray-900 border-2 border-gray-700 rounded-2xl p-6 mb-6 max-w-md w-full relative overflow-hidden">
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-purple-600 rounded-full blur-3xl opacity-20"></div>
+            <p class="text-lg text-white font-medium relative z-10">
+                Debatan, acusen y analicen.
+            </p>
+        </div>
+        
+        <!-- Botón IA In-Game -->
+        <button id="btn-ai-hint" onclick="App.generateInGameQuestion()" class="mb-8 w-full max-w-xs bg-indigo-900/50 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-200 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all">
+            <span>✨ Generar Pregunta Trampa</span>
+        </button>
+
+        <button onclick="App.revealImpostor()" class="bg-red-600 hover:bg-red-500 text-white w-full max-w-xs py-4 rounded-2xl text-xl font-bold shadow-lg shadow-red-900/50 transition-all">
+            🚨 Revelar al Impostor
+        </button>
+    </section>
+
+    <!-- 6. REVELACIÓN -->
+    <section id="screen-reveal" class="screen text-center">
+        <h2 class="text-sm font-bold tracking-widest text-gray-500 uppercase mb-6">Fin de la partida</h2>
+        
+        <div class="mb-8">
+            <p class="text-gray-400 text-lg mb-2">El impostor era:</p>
+            <div id="result-impostor-name" class="text-4xl font-black text-red-500 mb-4 animate-bounce">NOMBRE</div>
+            <div class="text-6xl">😈</div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-xs mb-8 border border-gray-700">
+            <p class="text-gray-400 text-sm uppercase mb-2">La palabra secreta era</p>
+            <p id="result-secret-word" class="text-2xl font-bold text-purple-300">PALABRA</p>
+            <p class="text-xs text-gray-500 mt-2 italic" id="result-category">Categoría: X</p>
+        </div>
+
+        <div class="space-y-3 w-full max-w-xs">
+            <button onclick="App.restartGame(true)" class="btn-primary w-full py-3 rounded-xl font-bold">
+                🔄 Jugar otra ronda (Misma Config)
+            </button>
+            <button onclick="App.restartGame(false)" class="bg-gray-800 hover:bg-gray-700 w-full py-3 rounded-xl font-bold text-gray-300 border border-gray-700">
+                ⚙️ Cambiar Configuración
+            </button>
+        </div>
+    </section>
+
+    <!-- Lógica del Juego -->
+    <!-- Enlace al archivo JavaScript externo -->
+    <script src="script.js"></script>
+</body>
+</html>
